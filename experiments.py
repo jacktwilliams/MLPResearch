@@ -43,33 +43,52 @@ def train_and_eval(num_iterations, learning_rate, num_neurons, momentum):
     acc = get_accuracy(conf_mat)
     return acc
 
+def train_eval_ten_fold(num_iterations, learning_rate, num_neurons, momentum):
+    total = 0
+    leave = 0
+    for i in range(10):
+        start = int(len(data) * leave)
+        end = int(len(data) * (leave + .1))
+        train = np.concatenate(data[:start,:], data[end:,:])
+        train_tgt = np.concatenate(targets[:start,:], targets[end:,:])
+        validation = data[start:end,:]
+        val_tgt = targets[start:end,:]
+        p = mlp.mlp(train, train_tgt, num_neurons, momentum=momentum, outtype='logistic')
+        p.mlptrain(train, train_tgt, learning_rate, num_iterations)
+        conf_mat = p.confmat(validation, val_tgt)
+        acc = get_accuracy(conf_mat)
+        total += acc
+    return total / 10
+
+        
+
 def get_accuracy(conf_mat):
     total = conf_mat.sum()
     correct = (conf_mat * np.eye(2)).sum()
     return correct / total
 
-#print(train_and_eval(10000, .001, 10, .9))
+print(train_and_eval(100, .001, 5, .9))
 
 #lets see what accuracy we can get manually
-print(datetime.datetime.now())
-hidden_to_itrs = {}
-best_hidden = 0
-best_acc = 0
+# print(datetime.datetime.now())
+# hidden_to_itrs = {}
+# best_hidden = 0
+# best_acc = 0
 
-for num_hidden in range(1,30):
-    best_itrs = 0
-    itrs_acc = 0
-    for itrs in [1,100,1000]:
-        acc = train_and_eval(itrs, .001, num_hidden, .9)
-        print(str(num_hidden) + " : " + str(itrs) + " : " + str(acc))
-        if acc > itrs_acc:
-            best_itrs = itrs
-            itrs_acc = acc
-            hidden_to_itrs[num_hidden] = itrs
+# for num_hidden in range(1,30):
+#     best_itrs = 0
+#     itrs_acc = 0
+#     for itrs in [1,100,1000]:
+#         acc = train_and_eval(itrs, .001, num_hidden, .9)
+#         print(str(num_hidden) + " : " + str(itrs) + " : " + str(acc))
+#         if acc > itrs_acc:
+#             best_itrs = itrs
+#             itrs_acc = acc
+#             hidden_to_itrs[num_hidden] = itrs
 
-    if itrs_acc > best_acc:
-        best_acc = itrs_acc
-        best_hidden = num_hidden
-        print(str(num_hidden) + " better than previous with accuracy of " + str(itrs_acc))
+#     if itrs_acc > best_acc:
+#         best_acc = itrs_acc
+#         best_hidden = num_hidden
+#         print(str(num_hidden) + " better than previous with accuracy of " + str(itrs_acc))
 
-print(datetime.datetime.now())
+# print(datetime.datetime.now())
