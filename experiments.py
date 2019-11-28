@@ -11,26 +11,28 @@ resCol = 30
 
 #feature selection based on results from featureSelection.py
 selections = [20,7,22,27,19,18,resCol]
-cleaned = []
-for line in lines:
-    vals = line.split(",")
-    newline = []
-    for selection in selections:
-        newline.append(int(vals[selection]))
-    cleaned.append(newline)    
+def pick_selections_and_clean(selections):
+    cleaned = []
+    for line in lines:
+        vals = line.split(",")
+        newline = []
+        for selection in selections:
+            newline.append(int(vals[selection]))
+        cleaned.append(newline)
+        cleaned = np.array(cleaned)
+        data = cleaned[:, :len(selections) - 1]
+        targets = cleaned[:, len(selections) - 1]
+        #clean targets
+        #change -1 for "phishy" over to 0
+        newTargets = []
+        for target in targets:
+            if target == -1:
+                newTargets.append(0)
+            else:
+                newTargets.append(target)
+        targets = np.array(newTargets).reshape((len(targets),1))
+        return data, targets
 
-cleaned = np.array(cleaned)
-data = cleaned[:, :len(selections) - 1]
-targets = cleaned[:,len(selections)-1]
-
-#change -1 for "phishy" over to 0
-newTargets = []
-for target in targets:
-    if target == -1:
-        newTargets.append(0)
-    else:
-        newTargets.append(target)
-targets = np.array(newTargets).reshape((len(targets),1))
 
 def train_and_eval(num_iterations, learning_rate, num_neurons, momentum):
     split = int(len(data) * .9) #no ten-fold. Use 75% for training and rest for validation
@@ -69,7 +71,7 @@ def get_accuracy(conf_mat):
     return correct / total
 
 #print(train_eval_ten_fold(100, .001, 5, .9))
-#print(train_and_eval(100,.001,5,.9))
+print(train_and_eval(1, .001, 3, 0))
 
 #lets see what accuracy we can get manually
 # print(datetime.datetime.now())
@@ -122,6 +124,6 @@ def map_momentum(val):
     return x
            
 
-bats = BatAlgorithm.BatAlgorithm(4, 40, 100, .5, .5, 0, 2, 0, 1, train_eval_for_bat)
-bats.move_bat()
+#bats = BatAlgorithm.BatAlgorithm(4, 40, 100, .5, .5, 0, 2, 0, 1, train_eval_for_bat)
+#bats.move_bat()
     
