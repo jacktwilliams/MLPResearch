@@ -2,6 +2,7 @@
 import numpy as np
 import mlp
 import datetime
+import BatAlgorithm
 
 file = open("Dataset.arff")
 lines = file.read().split("\n")
@@ -49,8 +50,8 @@ def train_eval_ten_fold(num_iterations, learning_rate, num_neurons, momentum):
     for i in range(10):
         start = int(len(data) * leave)
         end = int(len(data) * (leave + .1))
-        train = np.concatenate(data[:start,:], data[end:,:])
-        train_tgt = np.concatenate(targets[:start,:], targets[end:,:])
+        train = np.concatenate((data[:start,:], data[end:,:]))
+        train_tgt = np.concatenate((targets[:start,:], targets[end:,:]))
         validation = data[start:end,:]
         val_tgt = targets[start:end,:]
         p = mlp.mlp(train, train_tgt, num_neurons, momentum=momentum, outtype='logistic')
@@ -67,7 +68,8 @@ def get_accuracy(conf_mat):
     correct = (conf_mat * np.eye(2)).sum()
     return correct / total
 
-print(train_and_eval(100, .001, 5, .9))
+#print(train_eval_ten_fold(100, .001, 5, .9))
+#print(train_and_eval(100,.001,5,.9))
 
 #lets see what accuracy we can get manually
 # print(datetime.datetime.now())
@@ -92,3 +94,34 @@ print(train_and_eval(100, .001, 5, .9))
 #         print(str(num_hidden) + " better than previous with accuracy of " + str(itrs_acc))
 
 # print(datetime.datetime.now())
+
+def train_eval_for_bat(D, sol):
+    acc = train_eval_ten_fold(map_num_itrs(sol[0]), map_learning_rate(sol[1]),
+                                      map_num_hidden(sol[2]), map_momentum(sol[3]))
+    print("Accuracy: " + str(acc) + "\n")
+    return 1 - acc
+
+def map_num_itrs(val):
+    x = int(val * 100 + 100)
+    print("itrs " + str(x))
+    return x
+
+def map_learning_rate(val):
+    x = val / 10
+    print("learning " + str(x))
+    return x
+
+def map_num_hidden(val):
+    x = int((val * 100) / 2 + 10)
+    print("hidden " + str(x))
+    return x
+
+def map_momentum(val):
+    x = val * 1.5 #range 0 - 1.5
+    print ("momentum " + str(x))
+    return x
+           
+
+bats = BatAlgorithm.BatAlgorithm(4, 40, 100, .5, .5, 0, 2, 0, 1, train_eval_for_bat)
+bats.move_bat()
+    
