@@ -1,8 +1,10 @@
 #!/usr/bin/python3
 import numpy as np
 import mlp
+import pylab as pl
 import datetime
 import BatAlgorithm
+import pca
 
 file = open("Dataset.arff")
 lines = file.read().split("\n")
@@ -18,7 +20,7 @@ def pick_selections_and_clean(selections):
             newline.append(int(vals[selection]))
         cleaned.append(newline)
         
-    cleaned = np.array(cleaned)
+    cleaned = np.array(cleaned, dtype=np.float)
     data = cleaned[:, :len(selections) - 1]
     targets = cleaned[:, len(selections) - 1]
     #clean targets
@@ -74,10 +76,10 @@ def manual_parameter_discovery():
     best_hidden = 0
     best_acc = 0
 
-    for num_hidden in range(1,10):
+    for num_hidden in [6]:
         best_itrs = 0
         itrs_acc = 0
-        for itrs in [1,100,1000]:
+        for itrs in [75 ,100, 150, 200, 250, 300, 450, 500, 600, 700, 800, 900, 1000]:
             acc = train_and_eval(itrs, .001, num_hidden, .9)
             print(str(num_hidden) + " : " + str(itrs) + " : " + str(acc))
             if acc > itrs_acc:
@@ -96,7 +98,7 @@ def train_eval_for_bat(D, sol):
                                       map_num_hidden(sol[2]), map_momentum(sol[3]))
     print("Accuracy: " + str(acc) + "\n")
     batResults.append((sol, acc))
-    return 1 - acc
+    return 1 - acc #batalg minimizes output
 
 def map_num_itrs(val):
     x = int(val * 100 + 100)
@@ -128,22 +130,43 @@ def getBestBatSolution():
     return bestSol
 
 #feature selection based on results from featureSelection.py
-selections = [20,7,22,27,19,18,resCol]
+#selections = [20,7,22,27,19,18,resCol]
+selections = list(range(31))
 data,targets = pick_selections_and_clean(selections)
+order = list(range(np.shape(data)[0]))
+data = data[order,:]
+targets = targets[order,:]
 
-numItrs = 10
+# w0 = np.where(targets==0)
+# w1 = np.where(targets==1)
+# pl.figure(1)
+# pl.title('Original Data Data')
+# pl.plot(data[w0,2],data[w0,1],'ok', color='r')
+# pl.plot(data[w1,2],data[w1,1], '^k', color='g')
+
+# pl.figure(2)
+x,y,evals,evecs = pca.pca(data,2)
+# pl.title('After PCA')
+# pl.plot(y[w0,2],y[w0,1],'ok', color='r')
+# pl.plot(y[w1,2],y[w1,1], '^k', color='g')
+# pl.show()
+
+data = y
+#manual_parameter_discovery()
+
+
+numItrs = 5
 
 print("Starting Bat Experiment")
 print(datetime.datetime.now())
-batF = open("batResults.txt", "w")
+batF = open("batResultsPCA.txt", "w")
 for i in range(numItrs):
-    bats = BatAlgorithm.BatAlgorithm(4, 40, 100, .5, .5, 0, 2, 0, 1, train_eval_for_bat)
+    bats = BatAlgorithm.BatAlgorithm(4, 1, 1, .5, .5, 0, 2, 0, 1, train_eval_for_bat)
     batResults = []
     bats.move_bat()
     sol = getBestBatSolution()
-    print("Result in case you miss it somehow..." + str(sol[1]))
+    print("*** Best acc in itr " + str(i) + ": " + str(sol[1]))
     batF.write(str(sol[1]))
-    print("***" + str(i) + " itr just finished.")
 batF.close()
 batResults = None #gargage collect this long list
 print("***Done with bats")
@@ -151,9 +174,9 @@ print(datetime.datetime.now())
 
 print("Starting Manual runs")
 print(datetime.datetime.now())
-regF = open("manualResults.txt", "w")
+regF = open("manualResultsPCA.txt", "w")
 for i in range(numItrs):
-    regF.write(str(train_and_eval(100, .001, 1, .9)))
+    regF.write(str(train_and_eval(700, .001, 6, .9)))
 regF.close()
 print("***Done with manual runs")
 print(datetime.datetime.now())
